@@ -1,0 +1,167 @@
+---
+title: "animated histo_waffle"
+author: "A Gruer"
+date: "20 November 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(gganimate)
+library(lubridate)
+library(magrittr)
+
+theme_set(theme_minimal())
+```
+
+
+
+```{r get data}
+wait_data <- read_csv("wait_data.csv", col_types = "Dicc")
+```
+Monthly snapshots of patients waiting for a procedure.
+
+Data dictionary
+
+  - date_for: month of snapshot
+  - days_on_list: number of days since the patient was added to the list
+  - month_event: one of four events to describe what happened to the patient during the month
+  - pat_id: unique identifier for wach patient
+  
+
+Month events
+In any one month a patient can have one of four events
+
+ 1. added to the list 
+ 1. added_and_removed in the same month
+ 1. removed from the list
+ 1. waited for the whole month
+
+```{r table state_by_month}
+table(wait_data$date_for, wait_data$month_event)
+```
+
+
+
+For a single month create a static "histo_waffle" and compare to a histogram
+
+```{r static histo_waffle}
+
+wait_data %>%
+  filter(date_for == as_date("2018/01/31")) %>%
+
+  # bin the waiting days into bins 20 days wide
+  # group by the bin and within each bin asssign a row number to each individual
+  mutate(bin  = cut_width(days_on_list, 20, center = 10)) %>%
+  group_by(bin) %>%
+  mutate(row_id = row_number(days_on_list)) %>%
+  ungroup() %>%
+
+  # some regex to get just the right hand limit of each bin as a number
+  # and use that as the leabel for the bins
+  # number following a comma.
+  # comma is a non-matching group
+  # number is group 1
+  # str_match returns a matrix - column one is the entire match.
+  # column 2 is group 1 and so on
+  mutate(bin = fct_relabel(bin, ~ str_match(.x, "(?:,)(\\d+)")[, 2])) %>%
+
+  ggplot(aes(bin, row_id)) +
+  geom_tile(width = 0.9, height = 0.9) +
+  coord_equal()  +
+  scale_x_discrete(drop = FALSE, name = "days waited") +
+  scale_y_continuous(breaks = seq.int(2, 10, 2), name = "number of patients") +
+  theme(panel.grid =  element_blank()) #+
+  #annotate("text", x =10, y = 6, label ="waiting list")
+
+```    
+
+```{r static histogram}     
+  
+wait_data %>%
+  filter(date_for == as_date("2018/01/31") ) %>%
+  ggplot(aes(days_on_list)) +
+  geom_histogram(binwidth = 20, center = 10)
+```
+
+
+Animation!!
+
+```{r animate, fig.path="histo_waffle.gif"}
+wait_data %>%
+
+  # filter out added_and_removed in same month - too distracting
+  # filter out removed - for now the pat_id will just disappear in the
+  # month the patient is removed
+  filter(month_event %in% c("waited", "added")) %>% 
+  
+  # bin the waiting days into bins 20 days wide
+  # group by the date_for bin and within each bin asssign a row number to each
+  # individual
+  mutate(bin  = cut_width(days_on_list, 20, center = 10)) %>% 
+  group_by(date_for, bin) %>% 
+  mutate(row_id = row_number(days_on_list)) %>% 
+  ungroup() %>% 
+    
+  # some regex to get just the right hand limit of each bin as a number
+  # and use that as the leabel for the bins
+  # number following a comma. 
+  # comma is a non-matching group
+  # number is group 1
+  # str_match returns a matrix - column one is the entire match.
+  # column 2 is group 1 and so on
+  mutate(bin = fct_relabel(bin, ~ str_match(.x, "(?:,)(\\d+)")[, 2])) %>%
+
+  #plotting code - TODO automate manual breaks
+  ggplot(aes(bin, row_id, group = pat_id)) +
+  geom_tile( width = 0.9, height = 0.9, fill = "mediumblue", alpha = 0.5) + 
+  scale_x_discrete(breaks = seq.int(20, 720, 40),
+                   drop = FALSE,
+                   name = "days waited") +
+  scale_y_continuous(breaks = seq.int(2, 20, 2), name = "number of patients") +
+  coord_equal() +
+  theme(panel.grid =  element_blank())   +
+  labs(x = "days waited (up to)", title = "{format(frame_time, '%B %y')}")  +
+
+  ## ANIMATE
+  # frames
+  transition_components(id = pat_id,
+                          #time = month  ,
+                          time =  as_date(date_for),
+                          enter_length = as_date(20),
+                          exit_length =  as_date(20)  
+                          ) +
+  
+  # entries and exits
+  enter_grow(fade = TRUE) + 
+  exit_shrink(fade = TRUE) +
+  
+  # easing of points algorithm
+  ease_aes("cubic-in-out")  
+    
+
+ 
+ #save to file
+  #gganimate::anim_save("wl.gif") 
+  
+
+  #transition_manual(frames = date_for) +
+  #labs(x = "days waited (up to)", title = "{current_frame}")
+  
+   # 
+   # transition_states(
+   # date_for,
+   # transition_length = 1,#0.5,
+   # state_length = 0.5,#0.0001,
+   # wrap = FALSE) +
+   # labs(x = "days waited (up to)", title = "{closest_state}")
+  
+  # transition_time(
+  #   as_date( date_for) )+
+   # labs(x = "days waited (up to)", title = "{frame_time}")
+
+  # transition_events(start = as_date(date_for)) +
+  # labs(x = "days waited (up to)", title = "{frame_time}")
+```
+
+
