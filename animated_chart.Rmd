@@ -17,7 +17,7 @@ theme_set(theme_minimal())
 
 
 ```{r get data}
-wait_data <- read_csv("wait_data.csv", col_types = "Dicc")
+wait_data <- read_csv("wait_data.csv", col_types = "DicDDc")
 ```
 Monthly snapshots of patients waiting for a procedure.
 
@@ -26,7 +26,10 @@ Data dictionary
   - date_for: month of snapshot
   - days_on_list: number of days since the patient was added to the list
   - month_event: one of four events to describe what happened to the patient during the month
+  - added date: date patient was added to the list
+  - removed_date: date patient was removed from the list, NA if patient not yet removed
   - pat_id: unique identifier for wach patient
+   
   
 
 Month events
@@ -163,5 +166,6 @@ wait_data %>%
   # transition_events(start = as_date(date_for)) +
   # labs(x = "days waited (up to)", title = "{frame_time}")
 ```
+
 
 
