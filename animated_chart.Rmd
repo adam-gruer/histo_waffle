@@ -166,6 +166,47 @@ wait_data %>%
   # transition_events(start = as_date(date_for)) +
   # labs(x = "days waited (up to)", title = "{frame_time}")
 ```
+```{r event sequence}
+  #ref: https://stackoverflow.com/questions/52243942/charting-event-sequence-data-with-r/52248151#52248151
+
+#wrangle data so for each pateint there is added event and a removed event 
+# with a corresponding date (can be NA for removed event)
+wait_data %>% 
+  group_by(pat_id) %>% 
+  summarise(added = max(added_date),
+            removed = max(removed_date)) %>% 
+  ungroup() %>% 
+  gather("event" , "date", -pat_id) %>% 
+  arrange( date) %>% 
+  
+  
+
+ggplot(  aes(date, pat_id, color = event)) +
+  geom_point(size = 2, shape = 'I') +
+  #scale_y_reverse(breaks = 2*1:33) + 
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) 
+  
+  
+  wait_data %>% 
+  group_by(pat_id) %>% 
+  summarise(added = max(added_date),
+            removed = max(removed_date)) %>% 
+    filter(!is.na(removed)) %>% 
+  
+  ggplot(  aes(added, removed, color = "royalblue")) +
+  geom_point(size = 3) +
+  #scale_y_reverse(breaks = 2*1:33) + 
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  
+  transition_events(start = added,
+                    end = removed,
+                    enter_length = as_date(3L),
+                    exit_length = as_date(4L))
+```
 
 
 
