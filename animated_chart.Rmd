@@ -88,7 +88,7 @@ wait_data %>%
 ```
 
 
-Animation!!
+#Animation ... Profit!!
 
 ```{r animate, fig.path="histo_waffle.gif"}
 wait_data %>%
@@ -128,7 +128,7 @@ wait_data %>%
 
   ## ANIMATE
   # frames
-  transition_components(id = pat_id,
+  transition_components(#id = pat_id,
                           #time = month  ,
                           time =  as_date(date_for),
                           enter_length = as_date(20),
@@ -136,8 +136,8 @@ wait_data %>%
                           ) +
   
   # entries and exits
-  enter_grow(fade = TRUE) + 
-  exit_shrink(fade = TRUE) +
+  enter_grow( ) + 
+  exit_shrink() +
   
   # easing of points algorithm
   ease_aes("cubic-in-out")  
@@ -166,6 +166,9 @@ wait_data %>%
   # transition_events(start = as_date(date_for)) +
   # labs(x = "days waited (up to)", title = "{frame_time}")
 ```
+
+#Experiment !!
+
 ```{r event sequence}
   #ref: https://stackoverflow.com/questions/52243942/charting-event-sequence-data-with-r/52248151#52248151
 
